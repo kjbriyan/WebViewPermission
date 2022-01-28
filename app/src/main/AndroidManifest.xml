@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.sister.myapplication">
+    package="com.sister.myapplication"
+    android:compileSdkVersion="31"
+    android:versionCode="1"
+    android:versionName="1.0"
+    >
+
     <permission
         android:name="com.example.com.locationmap.permission.MAPS_RECEIVE"
-        android:protectionLevel="signature"/>
+        android:protectionLevel="signature" />
+
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
@@ -15,9 +21,9 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_LOCATION_EXTRA_COMMANDS" />
-   <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
-    <uses-permission android:name="android.permission.INSTALL_LOCATION_PROVIDER"
-        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.GET_ACCOUNTS"/>
+    <uses-permission android:name="android.permission.USE_CREDENTIALS"/>
 
 
     <uses-feature
@@ -30,16 +36,19 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_start_round"
         android:label="@string/app_name"
+        android:requestLegacyExternalStorage="true"
         android:roundIcon="@mipmap/ic_start_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication"
         android:usesCleartextTraffic="true"
-        android:requestLegacyExternalStorage="true"
+        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
         tools:ignore="UnusedAttribute">
-        <meta-data android:name="android.webkit.WebView.MetricsOptOut"
+        <meta-data
+            android:name="android.webkit.WebView.MetricsOptOut"
             android:value="true" />
-        <meta-data android:name="android.webkit.WebView.EnableSafeBrowsing"
-            android:value="false" />
+        <meta-data
+            android:name="android.webkit.WebView.EnableSafeBrowsing"
+            android:value="true" />
 
         <activity
             android:name=".SplashActivity"
@@ -53,7 +62,8 @@
         </activity>
         <activity
             android:name=".MainActivity"
-            android:theme="@style/Theme.NoactionBars" />
+            android:theme="@style/Theme.NoactionBars"
+            android:exported="false"/>
     </application>
 
 </manifest>

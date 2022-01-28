@@ -1,14 +1,19 @@
 package com.sister.myapplication
 
+
 import android.Manifest
-import android.R.attr
+import android.accounts.AccountManager
+import android.accounts.AccountManagerCallback
+import android.accounts.AccountManagerFuture
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.*
 import android.provider.MediaStore
 import android.util.Log
 import android.view.KeyEvent
+import android.view.View
 import android.webkit.*
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -16,26 +21,28 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.webkit.WebViewCompat
-import com.google.android.gms.auth.api.signin.GoogleSignIn
 import java.io.File
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import android.R.attr.data
-import android.accounts.AccountManager
-import android.accounts.AccountManagerCallback
-import android.accounts.AccountManagerFuture
-import android.os.*
+import android.webkit.WebView
 
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount
-import com.google.android.gms.tasks.Task
-import com.google.android.gms.common.Scopes
-import com.google.android.gms.common.api.Scope
+import android.view.ViewGroup
+import android.webkit.WebView.WebViewTransport
+
+import android.widget.FrameLayout
+import android.net.http.SslError
+
+import android.webkit.SslErrorHandler
+import androidx.core.content.ContextCompat.startActivity
 
 
 class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
+    private lateinit var webViewPop: WebView
     private val PERMISSION_REQUEST_CODE = 200
     private var mUploadMessage: ValueCallback<Array<Uri>>? = null
     private var mCapturedImageURI: Uri? = null
+    private lateinit var userAgent: String
+    private val mContainer: FrameLayout? = null
+
 
     @SuppressLint("SetJavaScriptEnabled", "InlinedApi", "JavascriptInterface")
     @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
@@ -57,11 +64,12 @@ class MainActivity : AppCompatActivity() {
         )
 
         webView = findViewById(R.id.webview)
+        val url = "https://sisterskominda.eagleye.id/"
         webView.settings.javaScriptEnabled = true
         webView.settings.allowFileAccess = true
         webView.settings.allowContentAccess = true
         webView.settings.domStorageEnabled = true
-        webView.settings.userAgentString = getString(R.string.app_name)
+//        webView.settings.userAgentString = getString(R.string.app_name)
         webView.settings.allowFileAccess = true
         webView.settings.loadWithOverviewMode = true
         webView.settings.pluginState = WebSettings.PluginState.ON
@@ -72,31 +80,74 @@ class MainActivity : AppCompatActivity() {
         webView.settings.allowFileAccessFromFileURLs = true
         webView.settings.saveFormData = true
         webView.settings.setRenderPriority(WebSettings.RenderPriority.HIGH)
-        webView.settings.setSupportZoom(true)
-        webView.settings.builtInZoomControls = true
+        val webSettings = webView.settings
+        webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        webSettings.setAppCacheEnabled(true);
+        webSettings.setDomStorageEnabled(true);
+        webSettings.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NARROW_COLUMNS);
+        webSettings.setUseWideViewPort(true);
+        webSettings.setSaveFormData(true);
+        webSettings.setEnableSmoothTransition(true);
+        webView.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
+        webSettings.cacheMode = WebSettings.LOAD_DEFAULT
 
 
+// Set User Agent
+        userAgent = "";
+//        webView.settings.setUserAgentString(userAgent + "com.sister.myapplication");
+        Log.d("hosts", webSettings.userAgentString)
+        webSettings.userAgentString = "Mozilla/5.0 (Linux; Android 11; SM-A025F Build/RP1A.200720.012; wv)"
 
-        webView.addJavascriptInterface(this, "Android")
-        val url = "https://sisterskominda.eagleye.id"
+        // Enable Cookies
+        CookieManager.getInstance().setAcceptCookie(true);
+        if (android.os.Build.VERSION.SDK_INT >= 21)
+            CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
+
+        webView.addJavascriptInterface(this, "sisterskominda.eagleye.id")
+
 
         val webViewPackageInfo = WebViewCompat.getCurrentWebViewPackage(this@MainActivity)
         Log.d("MY_APP_TAG", "WebView version: ${webViewPackageInfo?.versionName}")
 
-        val serverClientId = "426452358858-v9g4g38et8jlfaaftb03brm6kphn2fqi.apps.googleusercontent.com"
-        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestScopes(Scope(Scopes.DRIVE_APPFOLDER))
-            .requestServerAuthCode(serverClientId)
-            .requestEmail()
-            .build()
 
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-                view?.loadUrl(url.toString())
+//                view?.loadUrl(url.toString())
                 for (i in list.indices) {
                     checkPermission(list[i], i)
                 }
+                val host = Uri.parse(url).host
+                Log.d("hosts", host.toString())
+                if (host!!.contains("m.facebook.com") || host.contains("facebook.co")
+                    || host.contains("google.co")
+                    || host.contains("www.facebook.com")
+                    || host.contains(".google.com")
+                    || host.contains(".google")
+                    || host.contains("accounts.google.com/signin/oauth/consent")
+                    || host.contains("accounts.youtube.com")
+                    || host.contains("accounts.google.com")
+                    || host.contains("accounts.google.co.in")
+                    || host.contains("www.accounts.google.com")
+                    || host.contains("oauth.googleusercontent.com")
+                    || host.contains("content.googleapis.com")
+                    || host.contains("ssl.gstatic.com")
+                ) {
+                    return false
+                }
+                view?.loadUrl(url.toString())
+                // Otherwise, the link is not for a page on my site, so launch
+                // another Activity that handles URLs
+//                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+//                startActivity(intent)
                 return true
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                Log.d(
+                    "url override",
+                    url.toString()
+                )
+                super.onPageFinished(view, url)
             }
         }
         webView.webChromeClient = object : WebChromeClient() {
@@ -108,11 +159,39 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
+            override fun onCreateWindow(
+                view: WebView?,
+                isDialog: Boolean,
+                isUserGesture: Boolean,
+                resultMsg: Message?
+            ): Boolean {
+
+                webViewPop = WebView(this@MainActivity)
+                webViewPop.setVerticalScrollBarEnabled(false)
+                webViewPop.setHorizontalScrollBarEnabled(false)
+                webViewPop.setWebViewClient(webView.webViewClient)
+                webViewPop.getSettings().setJavaScriptEnabled(true)
+                webViewPop.getSettings().setSavePassword(false)
+                webViewPop.setLayoutParams(
+                    FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                )
+                mContainer?.addView(webViewPop)
+                val transport = resultMsg!!.obj as WebViewTransport
+                transport.webView = webViewPop
+                resultMsg!!.sendToTarget()
+
+                return true
+            }
+      
+
             override fun onGeolocationPermissionsShowPrompt(
                 origin: String?,
                 callback: GeolocationPermissions.Callback?
             ) {
-//                callback?.invoke(origin, true, false)
+
                 super.onGeolocationPermissionsShowPrompt(origin, callback)
                 val permission = Manifest.permission.ACCESS_FINE_LOCATION;
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
@@ -176,17 +255,6 @@ class MainActivity : AppCompatActivity() {
 //        webView.loadUrl(url)
     }
 
-    private class OnTokenAcquired : AccountManagerCallback<Bundle> {
-
-        override fun run(result: AccountManagerFuture<Bundle>) {
-            // Get the result of the operation from the AccountManagerFuture.
-            val bundle: Bundle = result.getResult()
-
-            // The token is a named value in the bundle. The name of the value
-            // is stored in the constant AccountManager.KEY_AUTHTOKEN.
-            val token: String = bundle.getString(AccountManager.KEY_AUTHTOKEN).toString()
-        }
-    }
 
     fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
         // When user clicks a hyperlink, load in the existing WebView
